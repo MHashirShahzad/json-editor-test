@@ -5,10 +5,10 @@ use ratatui::{
     widgets::*,
     Frame,
 };
-use std::fs;
 use std::path::Path;
 use std::{error::Error, io};
 use std::{fmt::Alignment, rc::Rc, slice::Chunks};
+use std::{fs, ops::Index};
 
 use crate::app::{App, CurrentScreen, CurrentlyDeleting, CurrentlyEditing};
 
@@ -270,7 +270,7 @@ fn render_json_values(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
     // frame.render_widget(&json_block, chunks[1]);
 
     list_items.push(ListItem::new(Line::from(Span::styled(
-        format!("{: <25} | {: <25} : {}", "Index", "Key", "Value"),
+        format!("{: <25} | {: <25} |     {}", "Index", "Key", "Value"),
         Style::default().fg(Color::LightGreen).bold().italic(),
     ))));
 
@@ -329,12 +329,14 @@ fn generate_directory_list<P: AsRef<Path>>(
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
-        let item_text = format!("{}{}", "  ".repeat(indent), name);
+
+        let item_text = format!("{}{}", "|- ".repeat(indent), name);
 
         let style = if path.is_dir() {
             Style::default()
                 .fg(Color::LightBlue)
-                .add_modifier(Modifier::BOLD) // Directories styled in bold blue
+                .add_modifier(Modifier::BOLD)
+                .add_modifier(Modifier::ITALIC) // Directories styled in bold blue
         } else {
             Style::default().fg(Color::White) // Files styled in white
         };
@@ -342,10 +344,9 @@ fn generate_directory_list<P: AsRef<Path>>(
         list_items.push(ListItem::new(Line::from(Span::styled(item_text, style))));
 
         // Recursively add directory contents
-        // if path.is_dir() {
-        //     let sub_items = generate_directory_list(&path, indent + 1)?;
-        //     list_items.extend(sub_items);
-        // }
+        if path.is_dir() {
+            let _ = generate_directory_list(list_items, &path, indent + 1);
+        }
     }
     Ok(())
 }
