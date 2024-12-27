@@ -32,7 +32,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // create app and run it
     let mut app = App::new();
     let res = run_app(&mut terminal, &mut app);
-
     // restore terminal
     disable_raw_mode()?;
     execute!(
@@ -40,6 +39,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
+
     terminal.show_cursor()?;
 
     if let Ok(do_print) = res {

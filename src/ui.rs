@@ -1,5 +1,3 @@
-use std::{fmt::Alignment, rc::Rc, slice::Chunks};
-
 use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style, Stylize},
@@ -7,6 +5,10 @@ use ratatui::{
     widgets::*,
     Frame,
 };
+use std::fs;
+use std::path::Path;
+use std::{error::Error, io};
+use std::{fmt::Alignment, rc::Rc, slice::Chunks};
 
 use crate::app::{App, CurrentScreen, CurrentlyDeleting, CurrentlyEditing};
 
@@ -293,6 +295,7 @@ fn render_json_values(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
 }
 
 fn render_file_tree(frame: &mut Frame, json_chunks: &Rc<[Rect]>) {
+    let mut list_items: Vec<ListItem> = Vec::new();
     let tree_block = Block::new()
         .title("[1] Tree ")
         .title_style(
@@ -304,7 +307,47 @@ fn render_file_tree(frame: &mut Frame, json_chunks: &Rc<[Rect]>) {
         .border_type(BorderType::Rounded)
         .style(Style::default());
 
-    frame.render_widget(tree_block, json_chunks[0]);
+    let root_dir = ".";
+    let _ = generate_directory_list(&mut list_items, root_dir, 0);
+    let list = List::new(list_items).block(tree_block);
+    frame.render_widget(list, json_chunks[0]);
+}
+fn generate_directory_list<P: AsRef<Path>>(
+    list_items: &mut Vec<ListItem>,
+    path: P,
+    indent: usize,
+) -> io::Result<()> {
+    let entries = fs::read_dir(&path)?;
+
+    for entry in entries {
+        let entry = entry?;
+        let path = entry.path();
+
+        // Add file or directory to the list
+        let name = path
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_string();
+        let item_text = format!("{}{}", "  ".repeat(indent), name);
+
+        let style = if path.is_dir() {
+            Style::default()
+                .fg(Color::LightBlue)
+                .add_modifier(Modifier::BOLD) // Directories styled in bold blue
+        } else {
+            Style::default().fg(Color::White) // Files styled in white
+        };
+
+        list_items.push(ListItem::new(Line::from(Span::styled(item_text, style))));
+
+        // Recursively add directory contents
+        // if path.is_dir() {
+        //     let sub_items = generate_directory_list(&path, indent + 1)?;
+        //     list_items.extend(sub_items);
+        // }
+    }
+    Ok(())
 }
 // fn render_json_title(frame: &mut Frame, json_chunks: &Rc<[Rect]>) {
 //     let title_chunks: Rc<[Rect]> = Layout::default()
