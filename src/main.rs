@@ -1,5 +1,6 @@
 use std::{error::Error, io};
 
+use app::CurrentlyDeleting;
 use ratatui::{
     backend::{Backend, CrosstermBackend},
     crossterm::{
@@ -62,6 +63,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                 continue;
             }
             match app.current_screen {
+                // Main Screen Inputs
                 CurrentScreen::Main => match (key.code, key.modifiers) {
                     (KeyCode::Char('e'), KeyModifiers::NONE) => {
                         app.current_screen = CurrentScreen::Editing;
@@ -73,8 +75,13 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
                         app.current_screen = CurrentScreen::Exiting;
                     }
+                    (KeyCode::Char('d'), KeyModifiers::NONE) => {
+                        app.current_screen = CurrentScreen::Deleting;
+                        app.currently_deleting = Some(CurrentlyDeleting::Index);
+                    }
                     _ => {}
                 },
+                // Exiting inputs
                 CurrentScreen::Exiting => match key.code {
                     KeyCode::Char('y') => {
                         return Ok(true);
@@ -84,6 +91,7 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     }
                     _ => {}
                 },
+                // Editing Inputs
                 CurrentScreen::Editing if key.kind == KeyEventKind::Press => match key.code {
                     KeyCode::Enter => {
                         if let Some(editing) = &app.currently_editing {
@@ -125,6 +133,48 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                                 }
                                 CurrentlyEditing::Value => {
                                     app.value_input.push(value);
+                                }
+                            }
+                        }
+                    }
+                    _ => {}
+                },
+                // Deleting Inputs
+                CurrentScreen::Deleting if key.kind == KeyEventKind::Press => match key.code {
+                    KeyCode::Enter => {
+                        if let Some(deleting) = &app.currently_deleting {
+                            match deleting {
+                                CurrentlyDeleting::Index => {
+                                    app.currently_deleting = Some(CurrentlyDeleting::Index);
+                                    app.delete_key();
+                                    app.delete_index = String::new();
+                                    app.current_screen = CurrentScreen::Main;
+                                }
+                            }
+                        }
+                    }
+                    // Backspace
+                    KeyCode::Backspace => {
+                        if let Some(deleting) = &app.currently_deleting {
+                            match deleting {
+                                CurrentlyDeleting::Index => {
+                                    app.delete_index.pop();
+                                }
+                            }
+                        }
+                    }
+                    // Escape
+                    KeyCode::Esc => {
+                        app.current_screen = CurrentScreen::Main;
+                        app.currently_editing = None;
+                        app.delete_index = String::new();
+                    }
+                    // Any Character
+                    KeyCode::Char(value) => {
+                        if let Some(deleting) = &app.currently_deleting {
+                            match deleting {
+                                CurrentlyDeleting::Index => {
+                                    app.delete_index.push(value);
                                 }
                             }
                         }
