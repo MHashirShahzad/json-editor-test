@@ -101,6 +101,12 @@ fn render_bottombar(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
                     .fg(Color::Red)
                     .add_modifier(Modifier::RAPID_BLINK),
             ),
+            CurrentScreen::FileTree => Span::styled(
+                "File Tree",
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::SLOW_BLINK),
+            ),
         }
         .to_owned(),
         // A white divider bar to separate the two sections
@@ -146,6 +152,9 @@ fn render_bottombar(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
             ),
             CurrentScreen::Deleting => {
                 Span::styled("enter to delete", Style::default().fg(Color::Red))
+            }
+            CurrentScreen::FileTree => {
+                Span::styled(" ▲ ▼ to scroll", Style::default().fg(Color::Red))
             }
         }
     };
@@ -249,7 +258,7 @@ fn render_json_values(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
     let mut list_items = Vec::<ListItem>::new();
     let mut index = 0;
 
-    let json_block = Block::new()
+    let mut json_block = Block::new()
         .title("[2] JSON ")
         .title_style(
             Style::default()
@@ -257,8 +266,22 @@ fn render_json_values(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
                 .add_modifier(Modifier::BOLD),
         )
         .borders(Borders::ALL)
-        .border_type(BorderType::Rounded)
+        .border_type(BorderType::Thick)
         .style(Style::default());
+
+    // if not focused
+    if let (file_tree) = CurrentScreen::FileTree {
+        json_block = Block::new()
+            .title("[2] JSON ")
+            .title_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .borders(Borders::ALL)
+            .border_type(BorderType::Rounded)
+            .style(Style::default());
+    }
 
     let json_chunks: Rc<[Rect]> = Layout::default()
         .direction(Direction::Horizontal)
@@ -296,7 +319,8 @@ fn render_json_values(frame: &mut Frame, app: &App, chunks: &Rc<[Rect]>) {
 
 fn render_file_tree(frame: &mut Frame, json_chunks: &Rc<[Rect]>) {
     let mut list_items: Vec<ListItem> = Vec::new();
-    let tree_block = Block::new()
+
+    let mut tree_block = Block::new()
         .title("[1] Tree ")
         .title_style(
             Style::default()
@@ -307,6 +331,19 @@ fn render_file_tree(frame: &mut Frame, json_chunks: &Rc<[Rect]>) {
         .border_type(BorderType::Rounded)
         .style(Style::default());
 
+    // if focused
+    if let (file_tree) = CurrentScreen::FileTree {
+        tree_block = Block::new()
+            .title("[1] Tree ")
+            .title_style(
+                Style::default()
+                    .fg(Color::Yellow)
+                    .add_modifier(Modifier::BOLD),
+            )
+            .borders(Borders::ALL)
+            .border_type(BorderType::Thick)
+            .style(Style::default());
+    }
     let root_dir = ".";
     let _ = generate_directory_list(&mut list_items, root_dir, 0);
     let list = List::new(list_items).block(tree_block);

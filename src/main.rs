@@ -79,14 +79,21 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                         app.current_screen = CurrentScreen::Deleting;
                         app.currently_deleting = Some(CurrentlyDeleting::Index);
                     }
+                    (KeyCode::Char('1'), KeyModifiers::NONE) => {
+                        app.current_screen = CurrentScreen::FileTree;
+                    }
                     _ => {}
                 },
                 // Exiting inputs
-                CurrentScreen::Exiting => match key.code {
-                    KeyCode::Char('y') => {
+                CurrentScreen::Exiting => match (key.code, key.modifiers) {
+                    (KeyCode::Char('y'), KeyModifiers::NONE) => {
                         return Ok(true);
                     }
-                    KeyCode::Char('n') | KeyCode::Char('q') => {
+                    (KeyCode::Char('n'), KeyModifiers::NONE)
+                    | (KeyCode::Char('q'), KeyModifiers::NONE) => {
+                        return Ok(false);
+                    }
+                    (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
                         return Ok(false);
                     }
                     _ => {}
@@ -181,6 +188,18 @@ fn run_app<B: Backend>(terminal: &mut Terminal<B>, app: &mut App) -> io::Result<
                     }
                     _ => {}
                 },
+                // viewing file tree
+                CurrentScreen::FileTree if key.kind == KeyEventKind::Press => {
+                    match (key.code, key.modifiers) {
+                        (KeyCode::Char('2'), KeyModifiers::NONE) => {
+                            app.current_screen = CurrentScreen::Main;
+                        }
+                        (KeyCode::Char('c'), KeyModifiers::CONTROL) => {
+                            app.current_screen = CurrentScreen::Exiting;
+                        }
+                        _ => {}
+                    }
+                }
                 _ => {}
             }
         }

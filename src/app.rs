@@ -5,10 +5,11 @@ use std::io::Write;
 pub enum CurrentScreen {
     Main,
     Editing,
+    FileTree,
     Exiting,
     Deleting,
 }
-
+use ratatui::widgets::{Scrollbar, ScrollbarState};
 pub enum CurrentlyEditing {
     Key,
     Value,
@@ -25,6 +26,10 @@ pub struct App {
     pub current_screen: CurrentScreen, // the current screen the user is looking at, and will later determine what is rendered.
     pub currently_editing: Option<CurrentlyEditing>,
     pub currently_deleting: Option<CurrentlyDeleting>, // the optional state containing which of the key or value pair the user is editing. It is an option, because when the user is not directly editing a key-value pair, this will be set to `None`.
+    pub vertical_scroll_state: Option<ScrollbarState>,
+    //pub horizontal_scroll_state: Option<ScrollbarState>,
+    pub vertical_scroll: usize,
+    //pub horizontal_scroll: usize,
 }
 
 impl App {
@@ -37,6 +42,8 @@ impl App {
             current_screen: CurrentScreen::Main,
             currently_editing: None,
             currently_deleting: None,
+            vertical_scroll_state: None,
+            vertical_scroll: 0,
         }
     }
 
